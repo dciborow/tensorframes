@@ -154,7 +154,7 @@ with g2.as_default():
     value_output = tf.identity(g2.get_tensor_by_name('top_predictions:0'), name="value")
 
 
-raw_images_miscast = sc.binaryFiles("file:"+image_path) # file:
+raw_images_miscast = sc.binaryFiles(f"file:{image_path}")
 raw_images = raw_images_miscast.map(lambda x: (x[0], bytearray(x[1])))
 
 df = spark.createDataFrame(raw_images).toDF('image_uri', 'image_data')

@@ -184,7 +184,7 @@ class TestCore(object):
             x = tf.add(x_0, x_2, name='x')
             # The resulting number
             res = tfs.reduce_rows(x, df)
-        assert res == sum([r.x for r in data])
+        assert res == sum(r.x for r in data)
 
     def test_reduce_rows_1(self):
         data = [Row(x=float(x)) for x in range(5)]
@@ -197,7 +197,7 @@ class TestCore(object):
             x = tf.add(x_1, x_2, name='x')
             # The resulting number
             res = tfs.reduce_rows(x, df)
-        assert res == sum([r.x for r in data])
+        assert res == sum(r.x for r in data)
 
     def test_append_shape(self):
         data = [Row(x=float(x)) for x in range(5)]
@@ -211,7 +211,7 @@ class TestCore(object):
             x = tf.add(x_1, x_2, name='x')
             # The resulting number
             res = tfs.reduce_rows(x, ddf)
-            assert res == sum([r.x for r in data])
+            assert res == sum(r.x for r in data)
 
     # This test fails
     def test_reduce_blocks_1(self):
@@ -224,7 +224,7 @@ class TestCore(object):
             x = tf.reduce_sum(x_input, name='x')
             # The resulting dataframe
             res = tfs.reduce_blocks(x, df)
-        assert res == sum([r.x for r in data])
+        assert res == sum(r.x for r in data)
 
     def test_map_blocks_trimmed_0(self):
         data = [Row(x=float(x)) for x in range(3)]
