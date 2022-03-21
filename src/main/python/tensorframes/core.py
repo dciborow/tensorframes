@@ -27,7 +27,7 @@ def _java_api():
     javaClassName = "org.tensorframes.impl.DebugRowOps"
     if _sc is None:
         _sc = SparkContext._active_spark_context
-        logger.info("Spark context = " + str(_sc))
+        logger.info(f"Spark context = {str(_sc)}")
         _sql = SQLContext(_sc)
     _jvm = _sc._jvm
     # You cannot simply call the creation of the the class on the _jvm due to classloader issues
@@ -105,7 +105,10 @@ def _get_graph(fetches, initial_variables=_initial_variables_default):
     # String the output index
     col_names = [s.split(":")[0] for s in fetch_names]
     if len(set(col_names)) != len(col_names):
-        raise ValueError("Could not infer a list of unique names for the columns: %s" % str(fetch_names))
+        raise ValueError(
+            f"Could not infer a list of unique names for the columns: {fetch_names}"
+        )
+
     return graph
 
 def _unpack_row(jdf, fetches):
@@ -115,10 +118,7 @@ def _unpack_row(jdf, fetches):
         name = fetch.name.replace(":0", "")
         x = row[name]
         ndims = fetch.get_shape().ndims
-        if ndims > 0:
-            return np.array(x)
-        else:
-            return x
+        return np.array(x) if ndims > 0 else x
     l = [f(fetch) for fetch in fetches]
     if len(l) == 1:
         return l[0]
@@ -156,15 +156,10 @@ def _map(fetches, dframe, feed_dict, block, trim, initial_variables=_initial_var
     return DataFrame(jdf, _sql)
 
 def _get_input(graph):
-    ph_names = []
-    for n in graph.as_graph_def().node:
-        # Just the input nodes:
-        if n.op == 'Placeholder':
-            ph_names.append(n.name)
-    return ph_names
+    return [n.name for n in graph.as_graph_def().node if n.op == 'Placeholder']
 
 def _unique_graph(fetches):
-    graph = set([t.graph for t in fetches])
+    graph = {t.graph for t in fetches}
     assert len(graph)==1, 'there can only be one graph'
     return graph.pop()
 
@@ -451,11 +446,11 @@ def row(df, col_name, tf_name = None):
 def _auto_placeholder(df, col_name, tf_name, block):
     info = _java_api().extra_schema_info(df._jdf)
     col_shape = [x.shape() for x in info if x.fieldName() == col_name]
-    if len(col_shape) == 0:
+    if not col_shape:
         raise Exception("Could not find column with name {col_name}")
     col_shape = col_shape[0]
     col_struct = [x for x in df.schema.fields if x.name == col_name]
-    if len(col_struct) == 0:
+    if not col_struct:
         raise
     col_struct = col_struct[0]
     # The dtypes known to TensorFrames.
@@ -486,13 +481,15 @@ def _get_jgroup(grouped_data):
         return grouped_data._jdf
     if '_jgd' in d:
         return grouped_data._jgd
-    raise ValueError('Could not find a dataframe for {}. All methods: {}'.format(grouped_data, d))
+    raise ValueError(
+        f'Could not find a dataframe for {grouped_data}. All methods: {d}'
+    )
 
 def _get_dtype(dtype):
     if isinstance(dtype, ArrayType):
         return _get_dtype(dtype.elementType)
     if dtype not in _dtypes:
-        raise Exception("Unknown type %s " % str(dtype))
+        raise Exception(f"Unknown type {str(dtype)} ")
     return _dtypes[dtype]
 
 def _validate_fetch(graph, fetch):
@@ -505,9 +502,6 @@ def _validate_fetch(graph, fetch):
         raise TypeError('Fetch argument %r has invalid type %r, '
                         'must be a string or Tensor. (%s)'
                         % (fetch, type(fetch), str(e)))
-    except ValueError as e:
-        raise ValueError('Fetch argument %r cannot be interpreted as a '
-                         'Tensor. (%s)' % (fetch, str(e)))
-    except KeyError as e:
+    except (ValueError, KeyError) as e:
         raise ValueError('Fetch argument %r cannot be interpreted as a '
                          'Tensor. (%s)' % (fetch, str(e)))
